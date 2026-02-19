@@ -284,21 +284,30 @@ if uploaded_file is not None:
                     # Primero intentamos la ruta absoluta.
                     # Si falla, buscamos en subcarpetas relativas o usamos placeholder.
                     
-                    fabric_img_path = match['Ruta_Foto']
+                    fabric_img_path = str(match['Ruta_Foto'])
                     display_img = None
                     
-                    if os.path.exists(fabric_img_path):
-                        display_img = Image.open(fabric_img_path)
-                    else:
-                        # Intento alternativo: buscar solo por nombre de archivo en Pano-PN relativo
-                        possible_path = os.path.join("Pano-PN", os.path.basename(fabric_img_path))
-                        # Si estuviéramos en la carpeta superior, ajustamos
-                        possible_path_2 = os.path.join("..", "Pano-PN", os.path.basename(fabric_img_path))
-                        
-                        if os.path.exists(possible_path):
-                            display_img = Image.open(possible_path)
-                        elif os.path.exists(possible_path_2):
-                             display_img = Image.open(possible_path_2)
+                    if fabric_img_path.startswith("http"):
+                        try:
+                            response = requests.get(fabric_img_path, timeout=5)
+                            if response.status_code == 200:
+                                display_img = Image.open(BytesIO(response.content))
+                        except Exception:
+                            pass
+                            
+                    if display_img is None:
+                        # Fallback a archivos locales
+                        if os.path.exists(fabric_img_path):
+                            display_img = Image.open(fabric_img_path)
+                        else:
+                            # Intento alternativo
+                            possible_path = os.path.join("Pano-PN", os.path.basename(fabric_img_path))
+                            possible_path_2 = os.path.join("..", "Pano-PN", os.path.basename(fabric_img_path))
+                            
+                            if os.path.exists(possible_path):
+                                display_img = Image.open(possible_path)
+                            elif os.path.exists(possible_path_2):
+                                 display_img = Image.open(possible_path_2)
                     
                     # Mostrar Tarjeta
                     st.markdown(f"**{match['Nombre']}**")
